@@ -1003,6 +1003,8 @@ class EtfPortfoliostimeline extends BasePackage
                             }
                         }
                     }
+
+                    $chunks['performances_chunks'][$time] = msort($chunks['performances_chunks'][$time], 'date');
                 }
             }
         }
