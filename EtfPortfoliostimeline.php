@@ -255,7 +255,7 @@ class EtfPortfoliostimeline extends BasePackage
                 return false;
             }
 
-            if ($timelineSnapshot) {
+            if (isset($timelineSnapshot)) {
                 $timelinePortfolio = $timelineSnapshot['snapshot'];
             }
         }
@@ -481,7 +481,7 @@ class EtfPortfoliostimeline extends BasePackage
         $progressMethods = [];
 
         foreach ($datesToProcess as $dateToProcess) {
-            if (!isset($this->timeline['snapshots'][$dateToProcess]) || $forceRecalculateTimeline) {
+            if (!isset($this->timeline['snapshots_ids'][$dateToProcess]) || $forceRecalculateTimeline) {
                 array_push($progressMethods,
                     [
                         'method'    => 'generatePortfolioTimeline',
@@ -575,6 +575,10 @@ class EtfPortfoliostimeline extends BasePackage
         $endDate = $this->parsedCarbon[$this->today];
 
         foreach ($this->portfolio['investments'] as $investment) {
+            if (strtolower($investment['status']) !== 'open') {
+                continue;
+            }
+
             if (!isset($this->parsedCarbon[$investment['latest_value_date']])) {
                 $this->parsedCarbon[$investment['latest_value_date']] = \Carbon\Carbon::parse($investment['latest_value_date']);
             }
@@ -743,7 +747,7 @@ class EtfPortfoliostimeline extends BasePackage
 
         $this->timelineDateBeingProcessed = $dateToProcess;
 
-        if (!isset($this->timeline['snapshots'][$dateToProcess]) || $forceRecalculateTimeline) {
+        if (!isset($this->timeline['snapshots_ids'][$dateToProcess]) || $forceRecalculateTimeline) {
             $snapshot = $this->portfolioPackage->recalculatePortfolio(['portfolio_id' => $this->portfolio['id']], false, $this);
 
             if (!isset($snapshot) || !$snapshot) {
@@ -930,7 +934,11 @@ class EtfPortfoliostimeline extends BasePackage
                         $timeDateKey = array_search($timeDate, $datesKeys);
                         $snapshotChunks = array_slice($this->timeline['snapshots_ids'], $timeDateKey);
                     } else {
+                        $this->switchModel($this->snapshotsModel);
+
                         $this->generatePortfolioTimeline([$timeDate, $args[1]]);
+
+                        $this->saveTimeline(null);
 
                         if (isset($this->timeline['snapshots_ids'][$timeDate])) {
                             $timeDateKey = array_search($timeDate, $datesKeys);
